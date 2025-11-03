@@ -5,112 +5,112 @@ import math
 BEST_WEIGHTS = {
     "w1": [
         [
-            0.3364990965510476,
-            0.5522940051410093,
-            -1.2189343101745362,
-            -3.7224030497588005,
-            4.337058818100866,
-            3.9656182531448008,
-            -1.3614930832436811,
-            5.2749400008891705,
-            -0.9068576119554229,
-            -1.3535469736112868
+            0.5048737949108735,
+            -5.492231312669914,
+            1.9981010335074267,
+            -1.5397401600976304,
+            2.393386393126837,
+            -1.5263707005039682,
+            -4.90238784624775,
+            -2.0823149635331903,
+            -3.1360275950425605,
+            -0.3848628124126694
         ],
         [
-            -1.5950617717723214,
-            1.7219088762973271,
-            -1.0405432447404537,
-            0.027453371198406185,
-            0.9030244280858368,
-            -1.5100589185279616,
-            2.5022234032717905,
-            -0.9800901765684162,
-            -0.4763882421577189,
-            0.09274268244303485
+            0.5663994249816403,
+            -0.7881256581808965,
+            -0.7255770839564091,
+            -2.103979831001074,
+            -1.5468106139227886,
+            -2.592220740096196,
+            2.357893325018439,
+            -0.9139154563723646,
+            0.5492856627875458,
+            1.7654147468281547
         ],
         [
-            2.2613420301419436,
-            2.208392163863593,
-            2.2189965304288233,
-            -1.2137341212435444,
-            -1.228259354446418,
-            -1.921042468522276,
-            -3.7711289122792575,
-            2.8264488175536515,
-            -0.1648706236644948,
-            1.3378412459402025
+            -1.07564702002183,
+            -3.1196396361932655,
+            -1.2140008216313007,
+            2.839050032969105,
+            -1.5376895926285434,
+            1.8815361803505288,
+            0.05762272326340201,
+            -3.1515472814597705,
+            1.491041547700363,
+            4.590045341172667
         ],
         [
-            0.6782459624945325,
-            -0.4199800125128328,
-            -0.0939551285292689,
-            0.8457735146704053,
-            1.9211666978498363,
-            -0.9073282746718755,
-            -2.5064108886519088,
-            -0.8579058605140035,
-            -0.33119286435499573,
-            0.9503216642502836
+            -0.9752188654936201,
+            2.6371782052701933,
+            -1.0634432622702166,
+            -1.864149435455316,
+            3.104725971325624,
+            -2.723010842435383,
+            2.682662682662423,
+            1.9047373770809661,
+            -0.6068599242104277,
+            3.16428303952405
         ],
         [
-            -3.6598851664923826,
-            5.721867578534918,
-            -1.1504077806734236,
-            -1.7652028378228632,
-            -1.955961193992914,
-            -0.506594296063658,
-            0.7898281269889548,
-            -1.6691377154030111,
-            1.6404259397406753,
-            0.7805371602183208
+            -0.9623807185643628,
+            0.9004886051016896,
+            -2.5647703108760163,
+            -1.2392332065203342,
+            0.2084711822530403,
+            1.5895938708152961,
+            2.2833730686642566,
+            -0.22191652360678382,
+            0.49572300426330684,
+            -2.200234037819817
         ]
     ],
     "b1": [
-        -0.30683249383029954,
-        0.051363289086821196,
-        -0.20895221978555878,
-        -0.5519768099736879,
-        -1.9603743844621255,
-        -1.2449430822202219,
-        1.0028180789732764,
-        -0.07079116840567823,
-        -1.4898365871854193,
-        -3.482437230964977
+        0.8229943804698495,
+        0.23861383261907498,
+        -1.0962728905774415,
+        3.104906137203656,
+        -1.6892663948166255,
+        -1.3516627123041456,
+        5.831747642999843,
+        1.1205818591964118,
+        -0.35384675927693054,
+        1.545368109208701
     ],
     "w2": [
         [
-            -0.2732564649675574
+            -0.1485363810503656
         ],
         [
-            -3.150178965736796
+            4.039977675612165
         ],
         [
-            2.3408850626726676
+            1.02192126715817
         ],
         [
-            -1.29684690880674
+            -0.4889624593568097
         ],
         [
-            -1.4070248758821795
+            1.576204023301726
         ],
         [
-            -3.5154733551655912
+            -1.392375161380503
         ],
         [
-            1.219343501017138
+            0.552857687754932
         ],
         [
-            -1.8157945897251615
+            4.902722091525371
         ],
         [
-            0.5109912902906809
+            0.7702616134084319
         ],
         [
-            0.23813856881441187
+            2.7005219633836393
         ]
     ],
     "b2": [
-        1.7132674824107537
+        4.649329424288088
     ]
 }
 
@@ -155,13 +155,10 @@ class AIPlayer(Player):
             print(s, y)
             
     def generate_moves(self, board):
-        # For each possible move of the current piece, simulate all possible moves of the next piece
-        moves_2d = []
-        actions_2d = []
+        first_moves = []  # (sim_board, (r1, x1))
         for r1 in range(4):
             for x1 in range(10):
                 first_board = board.clone()
-                # first move
                 for _ in range(r1):
                     first_board.falling.rotate(Rotation.Clockwise, first_board)
                 dx1 = x1 - first_board.falling.left
@@ -171,32 +168,41 @@ class AIPlayer(Player):
                     first_board.falling.move(Direction.Right, first_board, dx1)
                 first_board.falling.move(Direction.Drop, first_board)
                 first_board.land_block()
+                first_moves.append((first_board, (r1, x1)))
 
-                #enumerate all possible next moves for each first move
-                row_moves = []
-                row_actions = []
+        first_scores = [self.get_score(b, board) for b, _ in first_moves]
+        # get indices of top 5 moves only
+        if len(first_scores) > 5:
+            top_indices = sorted(range(len(first_scores)), key=lambda i: first_scores[i], reverse=True)[:5]
+        else:
+            top_indices = list(range(len(first_scores)))
 
-                if first_board.falling is not None:
-                    for r2 in range(4):
-                        for x2 in range(10):
-                            second_board = first_board.clone()
-                            for _ in range(r2):
-                                second_board.falling.rotate(Rotation.Clockwise, second_board)
-                            dx2 = x2 - second_board.falling.left
-                            if dx2 < 0:
-                                second_board.falling.move(Direction.Left, second_board, -dx2)
-                            elif dx2 > 0:
-                                second_board.falling.move(Direction.Right, second_board, dx2)
-                            second_board.falling.move(Direction.Drop, second_board)
-                            second_board.land_block()
-                            row_moves.append(second_board)
-                            row_actions.append(((r1, x1), (r2, x2)))
-                else:
-                    # if no other block just append original
-                    row_moves.append(first_board)
-                    row_actions.append(((r1, x1), None))
-                moves_2d.append(row_moves)
-                actions_2d.append(row_actions)
+        moves_2d = []
+        actions_2d = []
+        for idx in top_indices:
+            first_board, (r1, x1) = first_moves[idx]
+            row_moves = []
+            row_actions = []
+            if first_board.falling is not None:
+                for r2 in range(4):
+                    for x2 in range(10):
+                        second_board = first_board.clone()
+                        for _ in range(r2):
+                            second_board.falling.rotate(Rotation.Clockwise, second_board)
+                        dx2 = x2 - second_board.falling.left
+                        if dx2 < 0:
+                            second_board.falling.move(Direction.Left, second_board, -dx2)
+                        elif dx2 > 0:
+                            second_board.falling.move(Direction.Right, second_board, dx2)
+                        second_board.falling.move(Direction.Drop, second_board)
+                        second_board.land_block()
+                        row_moves.append(second_board)
+                        row_actions.append(((r1, x1), (r2, x2)))
+            else:
+                row_moves.append(first_board)
+                row_actions.append(((r1, x1), None))
+            moves_2d.append(row_moves)
+            actions_2d.append(row_actions)
         return moves_2d, actions_2d
 
     def get_features(self, move, board):
