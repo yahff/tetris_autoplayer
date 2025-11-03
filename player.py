@@ -5,112 +5,112 @@ import math
 BEST_WEIGHTS = {
     "w1": [
         [
-            0.5048737949108735,
-            -5.492231312669914,
-            1.9981010335074267,
-            -1.5397401600976304,
-            2.393386393126837,
-            -1.5263707005039682,
-            -4.90238784624775,
-            -2.0823149635331903,
-            -3.1360275950425605,
-            -0.3848628124126694
+            0.3364990965510476,
+            0.5522940051410093,
+            -1.2189343101745362,
+            -3.7224030497588005,
+            4.337058818100866,
+            3.9656182531448008,
+            -1.3614930832436811,
+            5.2749400008891705,
+            -0.9068576119554229,
+            -1.3535469736112868
         ],
         [
-            0.5663994249816403,
-            -0.7881256581808965,
-            -0.7255770839564091,
-            -2.103979831001074,
-            -1.5468106139227886,
-            -2.592220740096196,
-            2.357893325018439,
-            -0.9139154563723646,
-            0.5492856627875458,
-            1.7654147468281547
+            -1.5950617717723214,
+            1.7219088762973271,
+            -1.0405432447404537,
+            0.027453371198406185,
+            0.9030244280858368,
+            -1.5100589185279616,
+            2.5022234032717905,
+            -0.9800901765684162,
+            -0.4763882421577189,
+            0.09274268244303485
         ],
         [
-            -1.07564702002183,
-            -3.1196396361932655,
-            -1.2140008216313007,
-            2.839050032969105,
-            -1.5376895926285434,
-            1.8815361803505288,
-            0.05762272326340201,
-            -3.1515472814597705,
-            1.491041547700363,
-            4.590045341172667
+            2.2613420301419436,
+            2.208392163863593,
+            2.2189965304288233,
+            -1.2137341212435444,
+            -1.228259354446418,
+            -1.921042468522276,
+            -3.7711289122792575,
+            2.8264488175536515,
+            -0.1648706236644948,
+            1.3378412459402025
         ],
         [
-            -0.9752188654936201,
-            2.6371782052701933,
-            -1.0634432622702166,
-            -1.864149435455316,
-            3.104725971325624,
-            -2.723010842435383,
-            2.682662682662423,
-            1.9047373770809661,
-            -0.6068599242104277,
-            3.16428303952405
+            0.6782459624945325,
+            -0.4199800125128328,
+            -0.0939551285292689,
+            0.8457735146704053,
+            1.9211666978498363,
+            -0.9073282746718755,
+            -2.5064108886519088,
+            -0.8579058605140035,
+            -0.33119286435499573,
+            0.9503216642502836
         ],
         [
-            -0.9623807185643628,
-            0.9004886051016896,
-            -2.5647703108760163,
-            -1.2392332065203342,
-            0.2084711822530403,
-            1.5895938708152961,
-            2.2833730686642566,
-            -0.22191652360678382,
-            0.49572300426330684,
-            -2.200234037819817
+            -3.6598851664923826,
+            5.721867578534918,
+            -1.1504077806734236,
+            -1.7652028378228632,
+            -1.955961193992914,
+            -0.506594296063658,
+            0.7898281269889548,
+            -1.6691377154030111,
+            1.6404259397406753,
+            0.7805371602183208
         ]
     ],
     "b1": [
-        0.8229943804698495,
-        0.23861383261907498,
-        -1.0962728905774415,
-        3.104906137203656,
-        -1.6892663948166255,
-        -1.3516627123041456,
-        5.831747642999843,
-        1.1205818591964118,
-        -0.35384675927693054,
-        1.545368109208701
+        -0.30683249383029954,
+        0.051363289086821196,
+        -0.20895221978555878,
+        -0.5519768099736879,
+        -1.9603743844621255,
+        -1.2449430822202219,
+        1.0028180789732764,
+        -0.07079116840567823,
+        -1.4898365871854193,
+        -3.482437230964977
     ],
     "w2": [
         [
-            -0.1485363810503656
+            -0.2732564649675574
         ],
         [
-            4.039977675612165
+            -3.150178965736796
         ],
         [
-            1.02192126715817
+            2.3408850626726676
         ],
         [
-            -0.4889624593568097
+            -1.29684690880674
         ],
         [
-            1.576204023301726
+            -1.4070248758821795
         ],
         [
-            -1.392375161380503
+            -3.5154733551655912
         ],
         [
-            0.552857687754932
+            1.219343501017138
         ],
         [
-            4.902722091525371
+            -1.8157945897251615
         ],
         [
-            0.7702616134084319
+            0.5109912902906809
         ],
         [
-            2.7005219633836393
+            0.23813856881441187
         ]
     ],
     "b2": [
-        4.649329424288088
+        1.7132674824107537
     ]
 }
 
@@ -155,34 +155,50 @@ class AIPlayer(Player):
             print(s, y)
             
     def generate_moves(self, board):
-        move_list = []
-        action_list = []
-        for r in range(4):
-            for target_x in range(10):
-                test = board.clone()
+        # For each possible move of the current piece, simulate all possible moves of the next piece
+        moves_2d = []
+        actions_2d = []
+        for r1 in range(4):
+            for x1 in range(10):
+                first_board = board.clone()
+                # first move
+                for _ in range(r1):
+                    first_board.falling.rotate(Rotation.Clockwise, first_board)
+                dx1 = x1 - first_board.falling.left
+                if dx1 < 0:
+                    first_board.falling.move(Direction.Left, first_board, -dx1)
+                elif dx1 > 0:
+                    first_board.falling.move(Direction.Right, first_board, dx1)
+                first_board.falling.move(Direction.Drop, first_board)
+                first_board.land_block()
 
-                for _ in range(r):
-                    test.falling.rotate(Rotation.Clockwise, test)
-                
-                current_x = test.falling.left
+                #enumerate all possible next moves for each first move
+                row_moves = []
+                row_actions = []
 
-                if target_x < current_x:
-                    test.falling.move(Direction.Left, test, current_x - target_x)
-                elif target_x > current_x:
-                    test.falling.move(Direction.Right, test, target_x - current_x)
-                
+                if first_board.falling is not None:
+                    for r2 in range(4):
+                        for x2 in range(10):
+                            second_board = first_board.clone()
+                            for _ in range(r2):
+                                second_board.falling.rotate(Rotation.Clockwise, second_board)
+                            dx2 = x2 - second_board.falling.left
+                            if dx2 < 0:
+                                second_board.falling.move(Direction.Left, second_board, -dx2)
+                            elif dx2 > 0:
+                                second_board.falling.move(Direction.Right, second_board, dx2)
+                            second_board.falling.move(Direction.Drop, second_board)
+                            second_board.land_block()
+                            row_moves.append(second_board)
+                            row_actions.append(((r1, x1), (r2, x2)))
+                else:
+                    # if no other block just append original
+                    row_moves.append(first_board)
+                    row_actions.append(((r1, x1), None))
+                moves_2d.append(row_moves)
+                actions_2d.append(row_actions)
+        return moves_2d, actions_2d
 
-                test.falling.move(Direction.Drop, test)
-                test.land_block()
-                
-
-
-
-                action_list.append((r, target_x))
-                move_list.append(test)
-
-        return move_list, action_list
-                
     def get_features(self, move, board):
 
         holes = 0
@@ -244,51 +260,45 @@ class AIPlayer(Player):
         # return -1*features[0]+ -1*features[1]+ -1*features[2]+ -1*features[3]+ 1*features[4]
         return self.fp(features)
 
-    def score_moves(self, moves, board):
-        scores = []
-        for m in moves:
-            scores.append(self.get_score(m, board))
-        return scores
-        
+    def score_moves(self, moves_2d, board):
+        # moves_2d: 2D array of simulated boards
+        scores_2d = []
+        for row in moves_2d:
+            row_scores = []
+            for m in row:
+                row_scores.append(self.get_score(m, board))
+            scores_2d.append(row_scores)
+        return scores_2d
+
     def choose_action(self, board):
         # self.print_board(board)
         if self.board_cells != board.cells:
-            
             self.block_num += 1
-            #print("block number " + str(self.block_num))
 
-            possible_moves, actions = self.generate_moves(board)
-            scores = self.score_moves(possible_moves, board)
-            # print(max(scores))
-            # print(min(scores))
-            best = max(scores)
-            self.scorelist.append(best)
-            
-            idx = scores.index(best)
-            # self.print_board(possible_moves[idx])
-            # print(min(scores))
-            # print(max(scores))
-            rotations = actions[idx][0]
-            target_x = actions[idx][1]
-
+            moves_2d, actions_2d = self.generate_moves(board)
+            scores_2d = self.score_moves(moves_2d, board)
+            best_score = None
+            best_action = None
+            for i, row in enumerate(scores_2d):
+                for j, score in enumerate(row):
+                    if (best_score is None) or (score > best_score):
+                        best_score = score
+                        best_action = actions_2d[i][j][0]  # use first move only for current piece
+            self.scorelist.append(best_score)
+            rotations, target_x = best_action
             for _ in range(rotations):
                 self.move_queue.append(Rotation.Clockwise)
-
             temp_board = board.clone()
             for _ in range(rotations):
                 temp_board.falling.rotate(Rotation.Clockwise, temp_board)
-
             dx = target_x - temp_board.falling.left
             if dx > 0:
                 for _ in range(dx):
                     self.move_queue.append(Direction.Right)
             else:
-                for _ in range(-1 * dx):
+                for _ in range(-dx):
                     self.move_queue.append(Direction.Left)
-
             self.board_cells = board.cells
-
-
         if not self.move_queue:
             return Direction.Down
         return self.move_queue.pop(0)
