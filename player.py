@@ -1,4 +1,5 @@
-from board import Direction, Rotation, Action
+from board import Direction, Rotation, Action, Shape, Block
+
 import math
 
 
@@ -170,8 +171,22 @@ class AIPlayer(Player):
                 first_board.land_block()
                 first_moves.append((first_board, (r1, x1)))
 
+        # add discard as a move if available
+        if board.discards_remaining > 0:
+            discard_board = board.clone()
+            discard_board.discards_remaining -= 1
+            discard_board.place_next_block()  # disc current, place next
+            first_moves.append((discard_board, 'DISCARD'))
+
+        # add bomb as move if available
+        if board.bombs_remaining > 0 and board.next is not None and board.next.shape != 'B':
+            bomb_board = board.clone()
+            bomb_board.bombs_remaining -= 1
+            # Set the next piece to a bomb
+            bomb_board.next = Block(Shape.B)
+            first_moves.append((bomb_board, 'BOMB'))
+
         first_scores = [self.get_score(b, board) for b, _ in first_moves]
-        # get indices of top 5 moves only
         if len(first_scores) > 5:
             top_indices = sorted(range(len(first_scores)), key=lambda i: first_scores[i], reverse=True)[:5]
         else:
@@ -180,27 +195,51 @@ class AIPlayer(Player):
         moves_2d = []
         actions_2d = []
         for idx in top_indices:
-            first_board, (r1, x1) = first_moves[idx]
+            first_board, first_action = first_moves[idx]
             row_moves = []
             row_actions = []
-            if first_board.falling is not None:
-                for r2 in range(4):
-                    for x2 in range(10):
-                        second_board = first_board.clone()
-                        for _ in range(r2):
-                            second_board.falling.rotate(Rotation.Clockwise, second_board)
-                        dx2 = x2 - second_board.falling.left
-                        if dx2 < 0:
-                            second_board.falling.move(Direction.Left, second_board, -dx2)
-                        elif dx2 > 0:
-                            second_board.falling.move(Direction.Right, second_board, dx2)
-                        second_board.falling.move(Direction.Drop, second_board)
-                        second_board.land_block()
-                        row_moves.append(second_board)
-                        row_actions.append(((r1, x1), (r2, x2)))
-            else:
+            if first_action == 'DISCARD':
                 row_moves.append(first_board)
-                row_actions.append(((r1, x1), None))
+                row_actions.append(('DISCARD', None))
+            elif first_action == 'BOMB':
+                #all possible placements for the bomb piece
+                if first_board.falling is not None:
+                    for r2 in range(4):
+                        for x2 in range(10):
+                            second_board = first_board.clone()
+                            for _ in range(r2):
+                                second_board.falling.rotate(Rotation.Clockwise, second_board)
+                            dx2 = x2 - second_board.falling.left
+                            if dx2 < 0:
+                                second_board.falling.move(Direction.Left, second_board, -dx2)
+                            elif dx2 > 0:
+                                second_board.falling.move(Direction.Right, second_board, dx2)
+                            second_board.falling.move(Direction.Drop, second_board)
+                            second_board.land_block()
+                            row_moves.append(second_board)
+                            row_actions.append(('BOMB', (r2, x2)))
+                else:
+                    row_moves.append(first_board)
+                    row_actions.append(('BOMB', None))
+            else:
+                if first_board.falling is not None:
+                    for r2 in range(4):
+                        for x2 in range(10):
+                            second_board = first_board.clone()
+                            for _ in range(r2):
+                                second_board.falling.rotate(Rotation.Clockwise, second_board)
+                            dx2 = x2 - second_board.falling.left
+                            if dx2 < 0:
+                                second_board.falling.move(Direction.Left, second_board, -dx2)
+                            elif dx2 > 0:
+                                second_board.falling.move(Direction.Right, second_board, dx2)
+                            second_board.falling.move(Direction.Drop, second_board)
+                            second_board.land_block()
+                            row_moves.append(second_board)
+                            row_actions.append((first_action, (r2, x2)))
+                else:
+                    row_moves.append(first_board)
+                    row_actions.append((first_action, None))
             moves_2d.append(row_moves)
             actions_2d.append(row_actions)
         return moves_2d, actions_2d
@@ -287,10 +326,19 @@ class AIPlayer(Player):
             best_action = None
             for i, row in enumerate(scores_2d):
                 for j, score in enumerate(row):
+                    next = actions_2d[i][j][0]
+                    if next == 'BOMB':
+                        score /= 0.9 #decrease frequency of bomb uses
+                    if next == 'DISCARD':
+                        score /= 0.99 #decrease frequency of discard uses
                     if (best_score is None) or (score > best_score):
                         best_score = score
-                        best_action = actions_2d[i][j][0]  # use first move only for current piece
+                        best_action = next
             self.scorelist.append(best_score)
+            if best_action == 'DISCARD':
+                return Action.Discard
+            if best_action == 'BOMB':
+                return Action.Bomb
             rotations, target_x = best_action
             for _ in range(rotations):
                 self.move_queue.append(Rotation.Clockwise)
