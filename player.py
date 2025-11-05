@@ -197,8 +197,8 @@ class AIPlayer(Player):
 
         # next block lookahead
         first_scores = [self.get_score(b, board) for b, _ in first_moves]
-        if len(first_scores) > 3:
-            top_indices = sorted(range(len(first_scores)), key=lambda i: first_scores[i], reverse=True)[:3]
+        if len(first_scores) > 20:
+            top_indices = sorted(range(len(first_scores)), key=lambda i: first_scores[i], reverse=True)[:20]
         else:
             top_indices = list(range(len(first_scores)))
 
