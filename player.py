@@ -148,6 +148,8 @@ class AIPlayer(Player):
         self.scorelist = []
         self.block_num = 0
         self.board_cells = None
+        self.will_die = False
+
         if weights: # for training
             self.w1 = weights['w1']
             self.b1 = weights['b1']
@@ -218,7 +220,16 @@ class AIPlayer(Player):
                         elif dx2 > 0:
                             second_board.falling.move(Direction.Right, second_board, dx2)
                         second_board.falling.move(Direction.Drop, second_board)
+                        
+                        # dummy piece to check collision
+                        if second_board.next is None:
+                            second_board.next = Block(Shape.I) 
+                        
                         second_board.land_block()
+                        
+                        if not second_board.alive:
+                            self.will_die = True
+
                         row_moves.append(second_board)
                         row_actions.append((first_action, (r2, x2)))
             else:
@@ -364,6 +375,10 @@ class AIPlayer(Player):
             self.board_cells = board.cells
         if not self.move_queue:
             return Direction.Down
+        elif self.will_die:
+            self.will_die = False
+            self.move_queue.clear()
+            return Action.Bomb
         return self.move_queue.pop(0)
 
 
