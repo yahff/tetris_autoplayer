@@ -3,6 +3,31 @@ from board import Direction, Rotation, Action, Shape, Block
 import math
 
 
+LIN_WEIGHTS = {
+    "holes": -29.83165879270757,
+    "bumpiness": -1.9519986916971102,
+    "max_height": -3.15442924753169,
+    "height_threshold": 9.964456074722063,
+    "aggregate_height": -0.096318724958533,
+    "lines_1": 8.43126332916521,
+    "lines_2": 34.09809889042186,
+    "lines_3": 145.0029695271384,
+    "lines_4": 314.8567819113512,
+    "well_depth": 0.31458935826323176,
+    "well_depth_bonus": 8.145929383982473,
+    "well_target": 3.2110300782402827,
+    "holes_near_top": -67.26428696835761,
+    "column_transitions": -0.5220382679874931,
+    "row_transitions": -1.0012318591815983,
+    "buried_holes": -35.37399822083183,
+    "wells_count": -2.37276174141447,
+    "flatness_bonus": 1.578528401432732,
+    "height_variance": -0.3159626633808693,
+    "top_half_holes": -12.31512613393839,
+    "potential_lines": 9.051302280187372,
+    "blocking_i_piece": -32.048993366422955
+}
+
 BEST_WEIGHTS = {
     "w1": [
         [
@@ -143,7 +168,7 @@ class AIPlayer(Player):
     HIDDEN_NEURONS_1 = 6
     HIDDEN_NEURONS_2 = 4
 
-    def __init__(self, seed=None, weights=None):
+    def __init__(self, seed=None, weights=None, lin_weights=None):
         self.move_queue = []
         self.scorelist = []
         self.block_num = 0
@@ -164,6 +189,11 @@ class AIPlayer(Player):
             self.b2 = BEST_WEIGHTS['b2']
             self.w3 = BEST_WEIGHTS['w3']
             self.b3 = BEST_WEIGHTS['b3']
+        
+        if lin_weights:  # for linear weight training
+            self.lin_weights = lin_weights
+        else:
+            self.lin_weights = LIN_WEIGHTS
 
     def get_weights(self):
         return {'w1': self.w1, 'b1': self.b1, 'w2': self.w2, 'b2': self.b2, 'w3': self.w3, 'b3': self.b3}
@@ -197,11 +227,11 @@ class AIPlayer(Player):
 
         # next block lookahead
         first_scores = [self.get_score(b, board) for b, _ in first_moves]
-        # if len(first_scores) > 10:
-        #     top_indices = sorted(range(len(first_scores)), key=lambda i: first_scores[i], reverse=True)[:10]
-        # else:
-        #     top_indices = list(range(len(first_scores)))
-        top_indices = range(40)
+        if len(first_scores) > 10:
+            top_indices = sorted(range(len(first_scores)), key=lambda i: first_scores[i], reverse=True)[:10]
+        else:
+            top_indices = list(range(len(first_scores)))
+        # top_indices = range(40)
         moves_2d = []
         actions_2d = []
         for idx in top_indices:
@@ -264,45 +294,113 @@ class AIPlayer(Player):
         return max_well_depth
 
     def get_features(self, move, board):
-        holes = 0
-        for x in range(10):
-            found_block = False
-            for y in range(24):
-                if (x, y) in move.cells:
-                    found_block = True
-                elif found_block and (x, y) not in move.cells:
-                    holes += 1
-
         heights = []
         for x in range(10):
             col_height = 0
             for y in range(24):
-                if (x,y) in move.cells:
+                if (x, y) in move.cells:
                     col_height = 24 - y
                     break
             heights.append(col_height)
         
-        bump = 0
-        for i in range(9):
-            bump += abs(heights[i + 1] - heights[i])
-
-        lines_cleared = (len(board.cells) + 4 - len(move.cells)) // move.width if move.width > 0 else 0
+        holes = 0
+        buried_holes = 0
+        holes_near_top = 0
+        top_half_holes = 0
+        
+        for x in range(10):
+            found_block = False
+            blocks_above = 0
+            for y in range(24):
+                if (x, y) in move.cells:
+                    found_block = True
+                    blocks_above = 0
+                elif found_block and (x, y) not in move.cells:
+                    holes += 1
+                    blocks_above += 1
+                    if blocks_above >= 2:
+                        buried_holes += 1
+                    if y < 8:  # Top third of board
+                        holes_near_top += 1
+                    if y < 12:  # Top half
+                        top_half_holes += 1
+        
+        bumpiness = sum(abs(heights[i + 1] - heights[i]) for i in range(9))
+        
+        lines_cleared = max(0, (len(board.cells) + 4 - len(move.cells)) // 10)
         
         aggregate_height = sum(heights)
-        well_depth = self.calculate_deepest_well(move)
-
-        # normalising features
-        norm_holes = holes / 50.0
-        norm_bump = bump / 100.0
-        norm_max_height = max(heights) / 24.0
-        height_var = max(heights) - min(heights)
-        norm_height_var = height_var / 24.0
-        norm_lines_cleared = lines_cleared / 4.0
-        norm_blocks_placed = self.block_num / 400.0
-        norm_aggregate_height = aggregate_height / 240.0  
-        norm_well_depth = well_depth / 24.0
+        max_height = max(heights)
+        min_height = min(heights)
+        height_variance = max_height - min_height
         
-        return (norm_holes, norm_bump, norm_max_height, norm_height_var, norm_lines_cleared, norm_blocks_placed, norm_aggregate_height, norm_well_depth)
+        wells = []
+        for i in range(10):
+            if i == 0:
+                left_height = 24
+                right_height = heights[i + 1]
+            elif i == 9:
+                left_height = heights[i - 1]
+                right_height = 24
+            else:
+                left_height = heights[i - 1]
+                right_height = heights[i + 1]
+            
+            well_depth = min(left_height, right_height) - heights[i]
+            if well_depth > 0:
+                wells.append((i, well_depth))
+        
+        max_well_depth = max([w[1] for w in wells], default=0)
+        wells_count = len([w for w in wells if w[1] >= 2])
+        
+        deep_well_bonus = 0
+        blocking_i_piece = 0
+        for col, depth in wells:
+            if depth >= 4:
+                deep_well_bonus = max(deep_well_bonus, depth - 3)
+                if col > 0 and col < 9:
+                    if heights[col-1] - heights[col] > 4 or heights[col+1] - heights[col] > 4:
+                        blocking_i_piece += 1
+        
+        column_transitions = 0
+        for x in range(10):
+            for y in range(23):
+                if ((x, y) in move.cells) != ((x, y+1) in move.cells):
+                    column_transitions += 1
+        
+        row_transitions = 0
+        for y in range(24):
+            for x in range(9):
+                if ((x, y) in move.cells) != ((x+1, y) in move.cells):
+                    row_transitions += 1
+        
+        flatness = max(0, 10 - height_variance)
+        
+        potential_lines = 0
+        for y in range(24):
+            filled = sum(1 for x in range(10) if (x, y) in move.cells)
+            if filled >= 8:  # Row is at least 80% full
+                potential_lines += (filled - 7) * 0.5
+        
+        return {
+            'holes': holes,
+            'bumpiness': bumpiness,
+            'max_height': max_height,
+            'aggregate_height': aggregate_height,
+            'lines_cleared': lines_cleared,
+            'well_depth': max_well_depth,
+            'wells_count': wells_count,
+            'deep_well_bonus': deep_well_bonus,
+            'holes_near_top': holes_near_top,
+            'column_transitions': column_transitions,
+            'row_transitions': row_transitions,
+            'buried_holes': buried_holes,
+            'flatness': flatness,
+            'height_variance': height_variance,
+            'top_half_holes': top_half_holes,
+            'potential_lines': potential_lines,
+            'blocking_i_piece': blocking_i_piece
+        }
 
     def sgmoid(self, x):
         return 1 / (1 + math.exp(-x))
@@ -311,7 +409,7 @@ class AIPlayer(Player):
         # first hidden layer
         hidden1 = [0] * self.HIDDEN_NEURONS_1
         for i in range(self.HIDDEN_NEURONS_1):
-            for j in range(7):  
+            for j in range(8): 
                 hidden1[i] += features[j] * self.w1[j][i]
             hidden1[i] += self.b1[i]
         hidden1 = [self.sgmoid(x) for x in hidden1]
@@ -331,8 +429,47 @@ class AIPlayer(Player):
 
     def get_score(self, move, board):
         features = self.get_features(move, board)
-        # return -1*features[0]+ -1*features[1]+ -1*features[2]+ -1*features[3]+ 1*features[4]
-        return self.fp(features)
+        lw = self.lin_weights
+        score = 0
+        
+        score += lw["holes"] * features['holes']
+        score += lw["bumpiness"] * features['bumpiness']
+        score += lw["buried_holes"] * features['buried_holes']
+        score += lw["holes_near_top"] * features['holes_near_top']
+        score += lw["top_half_holes"] * features['top_half_holes']
+        
+        if features['max_height'] > lw["height_threshold"]:
+            score += lw["max_height"] * (features['max_height'] - lw["height_threshold"]) ** 2
+        
+        score += lw["aggregate_height"] * features['aggregate_height']
+        score += lw["height_variance"] * features['height_variance']
+        
+        score += lw["column_transitions"] * features['column_transitions']
+        score += lw["row_transitions"] * features['row_transitions']
+        
+        score += lw["wells_count"] * features['wells_count']
+        if features['well_depth'] > 0:
+            if features['well_depth'] >= 4:
+                score += lw["well_depth_bonus"] * features['deep_well_bonus']
+            else:
+                score += lw["well_depth"] * abs(features['well_depth'] - lw["well_target"])
+        
+        score += lw["blocking_i_piece"] * features['blocking_i_piece']
+        
+        score += lw["flatness_bonus"] * features['flatness']
+        score += lw["potential_lines"] * features['potential_lines']
+        
+        lines = features['lines_cleared']
+        if lines == 1:
+            score += lw["lines_1"]
+        elif lines == 2:
+            score += lw["lines_2"]
+        elif lines == 3:
+            score += lw["lines_3"]
+        elif lines >= 4:
+            score += lw["lines_4"]
+        
+        return score
 
     def score_moves(self, moves_2d, board):
         # moves_2d: 2D array of simulated boards
