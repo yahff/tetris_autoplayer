@@ -3,30 +3,7 @@ from board import Direction, Rotation, Action, Shape, Block
 import math
 
 
-LIN_WEIGHTS = {
-    "holes": -29.83165879270757,
-    "bumpiness": -1.9519986916971102,
-    "max_height": -3.15442924753169,
-    "height_threshold": 9.964456074722063,
-    "aggregate_height": -0.096318724958533,
-    "lines_1": 8.43126332916521,
-    "lines_2": 34.09809889042186,
-    "lines_3": 145.0029695271384,
-    "lines_4": 314.8567819113512,
-    "well_depth": 0.31458935826323176,
-    "well_depth_bonus": 8.145929383982473,
-    "well_target": 3.2110300782402827,
-    "holes_near_top": -67.26428696835761,
-    "column_transitions": -0.5220382679874931,
-    "row_transitions": -1.0012318591815983,
-    "buried_holes": -35.37399822083183,
-    "wells_count": -2.37276174141447,
-    "flatness_bonus": 1.578528401432732,
-    "height_variance": -0.3159626633808693,
-    "top_half_holes": -12.31512613393839,
-    "potential_lines": 9.051302280187372,
-    "blocking_i_piece": -32.048993366422955
-}
+LIN_WEIGHTS = {'holes': -30.05406124480332, 'bumpiness': -1.6962981924909795, 'max_height': -3.15442924753169, 'height_threshold': 9.924586230903087, 'aggregate_height': -0.14844970118447215, 'lines_1': 8.43126332916521, 'lines_2': 35.193032167372344, 'lines_3': 145.35033637994152, 'lines_4': 315.2666283152685, 'well_depth': 0.31458935826323176, 'well_depth_bonus': 8.434955609469464, 'well_target': 3.525271923173636, 'holes_near_top': -67.35836528023265, 'column_transitions': -0.6990244430730219, 'row_transitions': -0.6912388588794733, 'buried_holes': -35.37399822083183, 'wells_count': -2.37276174141447, 'flatness_bonus': 1.578528401432732, 'height_variance': -0.37893409231416975, 'top_half_holes': -12.652497921731698, 'potential_lines': 8.650426856340053, 'blocking_i_piece': -32.51160725346912}
 
 BEST_WEIGHTS = {
     "w1": [
