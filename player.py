@@ -3,7 +3,24 @@ from board import Direction, Rotation, Action, Shape, Block
 import math
 
 
-LIN_WEIGHTS = {'holes': -30.05406124480332, 'bumpiness': -1.6962981924909795, 'max_height': -3.15442924753169, 'height_threshold': 9.924586230903087, 'aggregate_height': -0.14844970118447215, 'lines_1': 8.43126332916521, 'lines_2': 35.193032167372344, 'lines_3': 145.35033637994152, 'lines_4': 315.2666283152685, 'well_depth': 0.31458935826323176, 'well_depth_bonus': 8.434955609469464, 'well_target': 3.525271923173636, 'holes_near_top': -67.35836528023265, 'column_transitions': -0.6990244430730219, 'row_transitions': -0.6912388588794733, 'buried_holes': -35.37399822083183, 'wells_count': -2.37276174141447, 'flatness_bonus': 1.578528401432732, 'height_variance': -0.37893409231416975, 'top_half_holes': -12.652497921731698, 'potential_lines': 8.650426856340053, 'blocking_i_piece': -32.51160725346912}
+LIN_WEIGHTS = {
+    "w1": -50.273744629263824,
+    "w2": -4.41344469696264,
+    "w3": 7.164815696296199,
+    "w4": -1.0101678777887262,
+    "w5": 2.8998306320382943,
+    "w6": 160.68374209180843,
+    "w7": -0.8371378915716114,
+    "w8": 3.5768768640807247,
+    "w9": -15.825345899801576,
+    "w10": 0.30391074788648853,
+    "w11": 16.45360763185806,
+    "w12": 25.181046195871005,
+    "w13": 109.8893514200883,
+    "w14": 526.2424313307113,
+    "w15": -0.9881923925410945,
+    "w16": 1.992023134801019
+}
 
 BEST_WEIGHTS = {
     "w1": [
@@ -266,11 +283,14 @@ class AIPlayer(Player):
             else:
                 left_height = heights[i - 1]
                 right_height = heights[i + 1]
+                # left_height = 0
+                # left_height = 0
             well_depth = min(left_height, right_height) - heights[i]
             max_well_depth = max(max_well_depth, well_depth)
         return max_well_depth
 
     def get_features(self, move, board):
+        # Calculate column heights
         heights = []
         for x in range(10):
             col_height = 0
@@ -280,84 +300,32 @@ class AIPlayer(Player):
                     break
             heights.append(col_height)
         
+        # Count holes
         holes = 0
-        buried_holes = 0
-        holes_near_top = 0
-        top_half_holes = 0
-        
         for x in range(10):
             found_block = False
-            blocks_above = 0
             for y in range(24):
                 if (x, y) in move.cells:
                     found_block = True
-                    blocks_above = 0
                 elif found_block and (x, y) not in move.cells:
                     holes += 1
-                    blocks_above += 1
-                    if blocks_above >= 2:
-                        buried_holes += 1
-                    if y < 8:  # Top third of board
-                        holes_near_top += 1
-                    if y < 12:  # Top half
-                        top_half_holes += 1
         
+        # Bumpiness (sum of absolute height differences)
         bumpiness = sum(abs(heights[i + 1] - heights[i]) for i in range(9))
         
+        # Lines cleared calculation
         lines_cleared = max(0, (len(board.cells) + 4 - len(move.cells)) // 10)
         
+        # Aggregate height
         aggregate_height = sum(heights)
         max_height = max(heights)
-        min_height = min(heights)
-        height_variance = max_height - min_height
         
-        wells = []
-        for i in range(10):
-            if i == 0:
-                left_height = 24
-                right_height = heights[i + 1]
-            elif i == 9:
-                left_height = heights[i - 1]
-                right_height = 24
-            else:
-                left_height = heights[i - 1]
-                right_height = heights[i + 1]
-            
-            well_depth = min(left_height, right_height) - heights[i]
-            if well_depth > 0:
-                wells.append((i, well_depth))
-        
-        max_well_depth = max([w[1] for w in wells], default=0)
-        wells_count = len([w for w in wells if w[1] >= 2])
-        
-        deep_well_bonus = 0
-        blocking_i_piece = 0
-        for col, depth in wells:
-            if depth >= 4:
-                deep_well_bonus = max(deep_well_bonus, depth - 3)
-                if col > 0 and col < 9:
-                    if heights[col-1] - heights[col] > 4 or heights[col+1] - heights[col] > 4:
-                        blocking_i_piece += 1
-        
-        column_transitions = 0
-        for x in range(10):
-            for y in range(23):
-                if ((x, y) in move.cells) != ((x, y+1) in move.cells):
-                    column_transitions += 1
-        
-        row_transitions = 0
-        for y in range(24):
-            for x in range(9):
-                if ((x, y) in move.cells) != ((x+1, y) in move.cells):
-                    row_transitions += 1
-        
-        flatness = max(0, 10 - height_variance)
-        
-        potential_lines = 0
+        # Potential clears (count rows that are almost complete)
+        potential_clears = 0
         for y in range(24):
             filled = sum(1 for x in range(10) if (x, y) in move.cells)
             if filled >= 8:  # Row is at least 80% full
-                potential_lines += (filled - 7) * 0.5
+                potential_clears += 1
         
         return {
             'holes': holes,
@@ -365,18 +333,7 @@ class AIPlayer(Player):
             'max_height': max_height,
             'aggregate_height': aggregate_height,
             'lines_cleared': lines_cleared,
-            'well_depth': max_well_depth,
-            'wells_count': wells_count,
-            'deep_well_bonus': deep_well_bonus,
-            'holes_near_top': holes_near_top,
-            'column_transitions': column_transitions,
-            'row_transitions': row_transitions,
-            'buried_holes': buried_holes,
-            'flatness': flatness,
-            'height_variance': height_variance,
-            'top_half_holes': top_half_holes,
-            'potential_lines': potential_lines,
-            'blocking_i_piece': blocking_i_piece
+            'potential_clears': potential_clears
         }
 
     def sgmoid(self, x):
@@ -406,45 +363,43 @@ class AIPlayer(Player):
 
     def get_score(self, move, board):
         features = self.get_features(move, board)
-        lw = self.lin_weights
+        w = self.lin_weights
         score = 0
         
-        score += lw["holes"] * features['holes']
-        score += lw["bumpiness"] * features['bumpiness']
-        score += lw["buried_holes"] * features['buried_holes']
-        score += lw["holes_near_top"] * features['holes_near_top']
-        score += lw["top_half_holes"] * features['top_half_holes']
+        # W1 x holes
+        score += w["w1"] * features['holes']
         
-        if features['max_height'] > lw["height_threshold"]:
-            score += lw["max_height"] * (features['max_height'] - lw["height_threshold"]) ** 2
+        # W2 x bumpiness
+        score += w["w2"] * features['bumpiness']
         
-        score += lw["aggregate_height"] * features['aggregate_height']
-        score += lw["height_variance"] * features['height_variance']
+        # If max_height > w3: w4 * (max_height - w3) ^ w5
+        if features['max_height'] > w["w3"]:
+            score += w["w4"] * (features['max_height'] - w["w3"]) ** w["w5"]
         
-        score += lw["column_transitions"] * features['column_transitions']
-        score += lw["row_transitions"] * features['row_transitions']
+        # If aggregate_height > w6: w7 * (aggregate_height - w6) ^ w8
+        if features['aggregate_height'] > w["w6"]:
+            score += w["w7"] * (features['aggregate_height'] - w["w6"]) ** w["w8"]
         
-        score += lw["wells_count"] * features['wells_count']
-        if features['well_depth'] > 0:
-            if features['well_depth'] >= 4:
-                score += lw["well_depth_bonus"] * features['deep_well_bonus']
-            else:
-                score += lw["well_depth"] * abs(features['well_depth'] - lw["well_target"])
+        # If potential_clears < 4: w9 * potential_clears ^ w10
+        if features['potential_clears'] < 4:
+            score += w["w9"] * (features['potential_clears'] ** w["w10"])
         
-        score += lw["blocking_i_piece"] * features['blocking_i_piece']
-        
-        score += lw["flatness_bonus"] * features['flatness']
-        score += lw["potential_lines"] * features['potential_lines']
-        
+        # Line clear rewards
         lines = features['lines_cleared']
         if lines == 1:
-            score += lw["lines_1"]
+            score += w["w11"]
         elif lines == 2:
-            score += lw["lines_2"]
+            score += w["w12"]
         elif lines == 3:
-            score += lw["lines_3"]
+            score += w["w13"]
         elif lines >= 4:
-            score += lw["lines_4"]
+            score += w["w14"]
+        
+        # W15 * max_height (promote growing before reaching threshold w3)
+        score += w["w15"] * features['max_height']
+        
+        # W16 * aggregate_height
+        score += w["w16"] * features['aggregate_height']
         
         return score
 
