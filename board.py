@@ -389,7 +389,7 @@ class Board(Bitmap):
                 removed += 1
             line -= 1
 
-        return scores[removed]
+        return scores[min(removed, len(scores) - 1)]
 
     def explode(self, pos):
         bx,by = next(iter(pos))

@@ -5,7 +5,7 @@ from constants import BOARD_WIDTH, BOARD_HEIGHT, DEFAULT_SEED, INTERVAL, \
     BLOCK_LIMIT
 from exceptions import BlockLimitException
 from player import Player, SelectedPlayer
-
+import random
 import pygame
 
 BLACK = (0, 0, 0)
@@ -158,8 +158,10 @@ def check_stop():
 
 
 def run():
+    seed = random.randint(0, 100000)
+    # print(seed)
     board = Board(BOARD_WIDTH, BOARD_HEIGHT)
-    adversary = RandomAdversary(DEFAULT_SEED, BLOCK_LIMIT)
+    adversary = RandomAdversary(seed, BLOCK_LIMIT)
 
     args = parser.parse_args()
     if args.manual:
