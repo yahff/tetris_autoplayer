@@ -146,14 +146,12 @@ class AIPlayer(Player):
     HIDDEN_NEURONS_1 = 6
     HIDDEN_NEURONS_2 = 4
 
-    def __init__(self, seed=None, weights=None, lin_weights=None):
+    def __init__(self, weights=None, lin_weights=None):
         self.move_queue = []
-        self.scorelist = []
-        self.block_num = 0
         self.board_cells = None
         self.will_die = False
 
-        if weights: # for training
+        if weights:
             self.w1 = weights['w1']
             self.b1 = weights['b1']
             self.w2 = weights['w2']
@@ -168,7 +166,7 @@ class AIPlayer(Player):
             self.w3 = BEST_WEIGHTS['w3']
             self.b3 = BEST_WEIGHTS['b3']
         
-        if lin_weights:  # for linear weight training
+        if lin_weights:
             self.lin_weights = lin_weights
         else:
             self.lin_weights = LIN_WEIGHTS
@@ -176,17 +174,6 @@ class AIPlayer(Player):
     def get_weights(self):
         return {'w1': self.w1, 'b1': self.b1, 'w2': self.w2, 'b2': self.b2, 'w3': self.w3, 'b3': self.b3}
 
-    def print_board(self, board):
-        print("--------")
-        for y in range(24):
-            s = ""
-            for x in range(10):
-                if (x,y) in board.cells:
-                    s += "#"
-                else:
-                    s += "."
-            print(s, y)
-            
     def generate_moves(self, board):
         first_moves = []  # (sim_board, (r1, x1))
         for r1 in range(4):
@@ -404,10 +391,7 @@ class AIPlayer(Player):
         return scores_2d
 
     def choose_action(self, board):
-        # self.print_board(board)
         if self.board_cells != board.cells:
-            self.block_num += 1
-
             moves_2d, actions_2d = self.generate_moves(board)
             scores_2d = self.score_moves(moves_2d, board)
             best_score = None
@@ -417,7 +401,6 @@ class AIPlayer(Player):
                     if (best_score is None) or (score > best_score):
                         best_score = score
                         best_action = actions_2d[i][j][0]
-            self.scorelist.append(best_score)
             rotations, target_x = best_action
             for _ in range(rotations):
                 self.move_queue.append(Rotation.Clockwise)

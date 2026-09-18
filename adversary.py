@@ -1,6 +1,7 @@
-from exceptions import BlockLimitException
 from random import Random
+
 from board import Shape
+from exceptions import BlockLimitException
 
 
 class Adversary:
@@ -9,9 +10,6 @@ class Adversary:
 
 
 class RandomAdversary(Adversary):
-    random = None
-    blocks = None
-
     def __init__(self, seed, blocks=None):
         self.random = Random(seed)
         self.blocks = blocks

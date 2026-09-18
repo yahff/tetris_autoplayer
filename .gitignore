@@ -1,3 +1,19 @@
-Pipfile
-Pipfile.lock
-__pycache__
+# Local Python environments and package metadata
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Python and tooling caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local machine files
+.DS_Store
+
+# Generated training output
+best_lin_weights*.json
+final_lin_weights.json
